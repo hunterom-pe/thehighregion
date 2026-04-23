@@ -466,6 +466,7 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   :root { --gutter: 6px; }
 
   .chrome {
+    position: absolute;
     padding: 14px 16px;
     padding-top: calc(14px + env(safe-area-inset-top));
   }
