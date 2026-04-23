@@ -94,7 +94,17 @@ infoPanel.addEventListener("click", (e) => {
   if (!cursor || !matchMedia("(hover: hover) and (pointer: fine)").matches) return;
   let x = window.innerWidth / 2, y = window.innerHeight / 2;
   let tx = x, ty = y;
-  document.addEventListener("mousemove", (e) => { tx = e.clientX; ty = e.clientY; });
+  // Contextual cursor labels
+  function setCursorLabel(text) {
+    const label = cursor.querySelector(".cursor-label");
+    if (label) label.textContent = text || "VIEW";
+  }
+
+  document.addEventListener("mousemove", (e) => { 
+    tx = e.clientX; 
+    ty = e.clientY; 
+  });
+  
   function tick() {
     x += (tx - x) * 0.22;
     y += (ty - y) * 0.22;
@@ -102,18 +112,47 @@ infoPanel.addEventListener("click", (e) => {
     requestAnimationFrame(tick);
   }
   tick();
+
   document.addEventListener("mouseleave", () => cursor.style.opacity = "0");
   document.addEventListener("mouseenter", () => cursor.style.opacity = "1");
-  // hover expansion handled by script at tile creation
+
+  // Hover expansion handled by script at tile creation
   window.__hoverableCursor = cursor;
+  window.__setCursorLabel = setCursorLabel;
 })();
 
-function bindHoverCursor(el) {
+function bindHoverCursor(el, label = "VIEW") {
   const c = window.__hoverableCursor;
   if (!c) return;
-  el.addEventListener("mouseenter", () => c.classList.add("hover"));
-  el.addEventListener("mouseleave", () => c.classList.remove("hover"));
+  el.addEventListener("mouseenter", () => {
+    c.classList.add("hover");
+    if (window.__setCursorLabel) window.__setCursorLabel(label);
+  });
+  el.addEventListener("mouseleave", () => {
+    c.classList.remove("hover");
+    if (window.__setCursorLabel) window.__setCursorLabel("VIEW");
+  });
 }
+
+// ---------- Magnetic Buttons ----------
+(function initMagnetic() {
+  if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const items = document.querySelectorAll(".theme-btn, .info-btn, .mark, .lb-close, .lb-prev, .lb-next");
+  
+  items.forEach(el => {
+    el.addEventListener("mousemove", (e) => {
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (e.clientX - cx) * 0.4;
+      const dy = (e.clientY - cy) * 0.4;
+      el.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    el.addEventListener("mouseleave", () => {
+      el.style.transform = "";
+    });
+  });
+})();
 
 // ---------- Gallery ----------
 const gallery = document.getElementById("gallery");
@@ -129,13 +168,14 @@ function loadGallery() {
   }
 
   // Layout pattern for mobile editorial rhythm (desktop ignores these classes).
-  // Pattern repeats every 6 photos:
-  //   0: full-bleed · 1: indent-left · 2+3: pair · 4: full-bleed · 5: indent-right
+  // Pattern repeats every 8 photos for more variety:
+  // 0: full-bleed · 1: indent-left · 2+3: pair · 4: centered-small · 5: full-bleed · 6: indent-right · 7: indent-left
   function mobileClass(i) {
-    const m = i % 6;
-    if (m === 0 || m === 4) return "tile--full-bleed";
-    if (m === 1) return "tile--indent-left";
-    if (m === 5) return "tile--indent-right";
+    const m = i % 8;
+    if (m === 0 || m === 5) return "tile--full-bleed";
+    if (m === 1 || m === 7) return "tile--indent-left";
+    if (m === 6) return "tile--indent-right";
+    if (m === 4) return "tile--centered-small";
     return ""; // 2 & 3 handled as a pair
   }
 
@@ -169,24 +209,44 @@ function loadGallery() {
   }
 
   let i = 0;
+  let photoCounter = 0; // Keep track of absolute index for lightbox
+  
   while (i < photos.length) {
-    const m = i % 6;
+    const item = photos[i];
+    
+    // Horizontal Series
+    if (Array.isArray(item)) {
+      const series = document.createElement("div");
+      series.className = "series";
+      item.forEach((p) => {
+        series.appendChild(buildTile(p, photoCounter));
+        photoCounter++;
+      });
+      gallery.appendChild(series);
+      i++;
+      continue;
+    }
+
+    const m = i % 8;
     // Pair slot: positions 2 & 3 of each cycle become a 2-up row on mobile
-    if (m === 2 && i + 1 < photos.length) {
+    if (m === 2 && i + 1 < photos.length && !Array.isArray(photos[i+1])) {
       const pair = document.createElement("div");
       pair.className = "pair";
-      pair.appendChild(buildTile(photos[i], i, ""));
-      pair.appendChild(buildTile(photos[i + 1], i + 1, ""));
+      pair.appendChild(buildTile(photos[i], photoCounter));
+      photoCounter++;
+      pair.appendChild(buildTile(photos[i + 1], photoCounter));
+      photoCounter++;
       gallery.appendChild(pair);
       i += 2;
     } else {
-      gallery.appendChild(buildTile(photos[i], i, mobileClass(i)));
+      gallery.appendChild(buildTile(photos[i], photoCounter, mobileClass(i)));
+      photoCounter++;
       i += 1;
     }
   }
 
   observeTiles();
-  prepareLightbox(photos);
+  prepareLightbox(photos.flat());
   bindParallax();
 }
 
@@ -221,7 +281,11 @@ function bindParallax() {
       strength: 14,
     }));
   } else {
-    targets = fullTiles.map((t) => ({ ...t, strength: 40 }));
+    targets = [...document.querySelectorAll(".tile")].map((el, idx) => ({
+      el,
+      img: el.querySelector("img"),
+      strength: 15 + (idx % 4) * 15, // Alternating speeds for depth
+    }));
   }
 
   if (targets.length === 0) return;
@@ -229,6 +293,16 @@ function bindParallax() {
   let raf = null;
   function update() {
     const vh = window.innerHeight;
+
+    // Hero parallax
+    const heroImg = document.getElementById("hero-img");
+    if (heroImg) {
+      const scroll = window.pageYOffset;
+      if (scroll < vh) {
+        heroImg.style.transform = `translateY(${scroll * 0.4}px) scale(${1 + scroll * 0.0005})`;
+      }
+    }
+
     targets.forEach(({ el, img, strength }) => {
       const rect = el.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > vh) return;
@@ -306,6 +380,15 @@ function step(delta) {
 lbClose.addEventListener("click", closeLightbox);
 lbPrev.addEventListener("click", () => step(-1));
 lbNext.addEventListener("click", () => step(1));
+
+// Add cursor labels to lightbox controls
+bindHoverCursor(lbClose, "CLOSE");
+bindHoverCursor(lbPrev, "PREV");
+bindHoverCursor(lbNext, "NEXT");
+bindHoverCursor(document.getElementById("info-toggle"), "INFO");
+bindHoverCursor(document.getElementById("theme-toggle"), "MODE");
+bindHoverCursor(document.querySelector(".mark"), "HOME");
+
 lb.addEventListener("click", (e) => {
   if (e.target === lb) closeLightbox();
 });
