@@ -230,7 +230,7 @@ function bindCarousel(photos) {
         setActive(best.target);
       }
     },
-    { root: gallery, threshold: [0.55, 0.8, 1] }
+    { root: null, threshold: [0.55, 0.8, 1] }
   );
   [...gallery.children].forEach((tile) => io.observe(tile));
 
@@ -287,7 +287,7 @@ function buildGridOverlay(photos) {
       const target = gallery.querySelector(`.tile[data-photo-index="${idx}"]`);
       if (target) {
         requestAnimationFrame(() => {
-          target.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+          target.scrollIntoView({ behavior: "smooth", block: "center" });
         });
       }
     });

@@ -244,7 +244,7 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
 
 /* ---------- Hero ---------- */
 .hero {
-  min-height: 92vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -508,7 +508,7 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   .theme-btn { width: 26px; height: 26px; }
 
   .hero {
-    min-height: 88vh;
+    min-height: 100vh;
     padding: 80px 20px 40px;
   }
   .hero-title {
@@ -532,43 +532,44 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   /* Show hero scroll indicator */
   .hero-scroll { display: flex; }
 
-  /* Horizontal snap carousel on mobile */
+  /* Vertical snap: hero + each photo is one full-viewport snap point */
+  html {
+    scroll-snap-type: y mandatory;
+  }
+  .hero {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  /* Intro slide redundant with hero on vertical flow */
+  .tile--intro { display: none; }
+
   .gallery {
-    margin: 8px 0 16px;
+    margin: 0;
     padding: 0;
     column-count: unset;
     column-gap: unset;
-    display: flex;
-    flex-direction: row;
-    gap: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-x: contain;
+    display: block;
+    overflow: visible;
   }
-  .gallery::-webkit-scrollbar { display: none; }
 
   .tile {
-    flex: 0 0 90vw;
-    width: 90vw;
+    width: 100%;
+    min-height: 100vh;
     aspect-ratio: auto;
     scroll-snap-align: center;
     scroll-snap-stop: always;
-    margin: 0 2vw;
-    padding: 0;
+    margin: 0;
+    padding: 0 16px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 76vh;
     background: none;
     animation: none;
     opacity: 0.3 !important;
-    transform: scale(0.96) !important;
-    transition: opacity 0.55s ease, transform 0.55s ease;
+    transform: scale(0.97) !important;
+    transition: opacity 0.6s ease, transform 0.6s ease;
   }
   .tile.is-active {
     opacity: 1 !important;
@@ -578,13 +579,13 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
     column-span: unset;
     grid-column: auto;
     aspect-ratio: auto;
-    margin: 0 2vw;
+    margin: 0;
   }
   .tile img,
   .tile.full img {
     width: auto;
     max-width: 100%;
-    max-height: 72vh;
+    max-height: 78vh;
     height: auto;
     object-fit: contain;
     transform: none !important;
@@ -639,15 +640,22 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
     margin: 18px auto;
   }
 
-  /* Carousel UI */
+  /* Carousel UI — fixed at bottom for vertical scroll */
   .carousel-ui {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 0 24px 36px;
-    padding-bottom: calc(36px + env(safe-area-inset-bottom));
+    gap: 10px;
+    padding: 14px 24px 16px;
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, var(--bg) 55%, transparent);
+    z-index: 50;
+    pointer-events: none;
   }
+  .carousel-ui > * { pointer-events: auto; }
+  .carousel-hint { display: none; }
   .carousel-progress {
     width: 72%;
     max-width: 420px;
