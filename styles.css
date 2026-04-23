@@ -529,9 +529,8 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   .contact { margin: 28px 0 24px; padding: 20px 0; }
   .contact-link { font-size: 20px; }
 
-  /* Hide the big hero on mobile — the intro slide is the cover instead */
-  .hero { display: none; }
-  .hero-scroll { display: none; }
+  /* Show hero scroll indicator */
+  .hero-scroll { display: flex; }
 
   /* Horizontal snap carousel on mobile */
   .gallery {
@@ -567,8 +566,8 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
     min-height: 76vh;
     background: none;
     animation: none;
-    opacity: 0.7 !important;
-    transform: scale(0.97) !important;
+    opacity: 0.3 !important;
+    transform: scale(0.96) !important;
     transition: opacity 0.55s ease, transform 0.55s ease;
   }
   .tile.is-active {

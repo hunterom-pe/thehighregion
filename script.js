@@ -215,9 +215,9 @@ function bindCarousel(photos) {
     }
   }
 
-  // activate the intro slide by default (it's the cover)
-  const firstChild = gallery.firstElementChild;
-  if (firstChild) setActive(firstChild);
+  // activate first real photo by default
+  const firstPhoto = gallery.querySelector(".tile:not(.tile--intro):not(.tile--outro)");
+  if (firstPhoto) setActive(firstPhoto);
 
   const io = new IntersectionObserver(
     (entries) => {
