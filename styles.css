@@ -200,6 +200,15 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   margin: 0 0 32px;
   color: var(--ink-dim);
 }
+.info-tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(28px, 4.2vw, 40px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  margin: 0 0 24px;
+}
 .info-bio {
   font-family: var(--serif);
   font-size: 22px;
@@ -531,15 +540,11 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
     margin-right: calc(-1 * var(--gutter));
     width: calc(100% + (var(--gutter) * 2));
   }
-  .tile--indent-left {
-    width: 82%;
-    margin-right: auto;
-    margin-left: 0;
-  }
+  .tile--indent-left,
   .tile--indent-right {
     width: 82%;
     margin-left: auto;
-    margin-right: 0;
+    margin-right: auto;
   }
 
   /* 2-up pair */
