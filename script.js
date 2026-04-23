@@ -128,13 +128,25 @@ function loadGallery() {
     return;
   }
 
-  photos.forEach((photo, i) => {
+  // Layout pattern for mobile editorial rhythm (desktop ignores these classes).
+  // Pattern repeats every 6 photos:
+  //   0: full-bleed · 1: indent-left · 2+3: pair · 4: full-bleed · 5: indent-right
+  function mobileClass(i) {
+    const m = i % 6;
+    if (m === 0 || m === 4) return "tile--full-bleed";
+    if (m === 1) return "tile--indent-left";
+    if (m === 5) return "tile--indent-right";
+    return ""; // 2 & 3 handled as a pair
+  }
+
+  function buildTile(photo, i, extraClass) {
     const src = typeof photo === "string" ? photo : photo.src;
     const caption = typeof photo === "string" ? "" : (photo.caption || "");
     const alt = typeof photo === "string" ? "" : (photo.alt || caption || "");
 
     const tile = document.createElement("figure");
     tile.className = "tile";
+    if (extraClass) tile.classList.add(extraClass);
     if (i > 0 && (i + 1) % 6 === 0) tile.classList.add("full");
 
     const img = document.createElement("img");
@@ -153,8 +165,25 @@ function loadGallery() {
 
     if (tile.classList.contains("full")) fullTiles.push({ el: tile, img });
 
-    gallery.appendChild(tile);
-  });
+    return tile;
+  }
+
+  let i = 0;
+  while (i < photos.length) {
+    const m = i % 6;
+    // Pair slot: positions 2 & 3 of each cycle become a 2-up row on mobile
+    if (m === 2 && i + 1 < photos.length) {
+      const pair = document.createElement("div");
+      pair.className = "pair";
+      pair.appendChild(buildTile(photos[i], i, ""));
+      pair.appendChild(buildTile(photos[i + 1], i + 1, ""));
+      gallery.appendChild(pair);
+      i += 2;
+    } else {
+      gallery.appendChild(buildTile(photos[i], i, mobileClass(i)));
+      i += 1;
+    }
+  }
 
   observeTiles();
   prepareLightbox(photos);
@@ -178,19 +207,38 @@ function observeTiles() {
   document.querySelectorAll(".tile").forEach((el) => io.observe(el));
 }
 
-// ---------- Parallax on full-bleed tiles ----------
+// ---------- Parallax (all photos on mobile, full-bleed on desktop) ----------
 function bindParallax() {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  if (matchMedia("(hover: none), (pointer: coarse)").matches) return;
+
+  const isMobile = matchMedia("(max-width: 720px)").matches;
+
+  let targets;
+  if (isMobile) {
+    targets = [...document.querySelectorAll("#gallery .tile img")].map((img) => ({
+      el: img.closest(".tile"),
+      img,
+      strength: 14,
+    }));
+  } else {
+    targets = fullTiles.map((t) => ({ ...t, strength: 40 }));
+  }
+
+  if (targets.length === 0) return;
+
   let raf = null;
   function update() {
     const vh = window.innerHeight;
-    fullTiles.forEach(({ el, img }) => {
+    targets.forEach(({ el, img, strength }) => {
       const rect = el.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > vh) return;
       const progress = (rect.top + rect.height / 2 - vh / 2) / vh;
-      const shift = Math.max(-40, Math.min(40, -progress * 40));
-      img.style.transform = `translateY(${shift}px) scale(1.08)`;
+      const shift = Math.max(-strength, Math.min(strength, -progress * strength));
+      if (isMobile) {
+        img.style.setProperty("--parallax", `${shift}px`);
+      } else {
+        img.style.transform = `translateY(${shift}px) scale(1.08)`;
+      }
     });
     raf = null;
   }

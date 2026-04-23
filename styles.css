@@ -499,7 +499,7 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   .contact { margin: 28px 0 24px; padding: 20px 0; }
   .contact-link { font-size: 20px; }
 
-  /* Simple vertical stack on mobile */
+  /* Editorial vertical flow on mobile */
   .gallery {
     margin: 24px auto 40px;
     padding: 0 var(--gutter);
@@ -510,6 +510,7 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
   .tile {
     margin: 0 0 var(--gutter);
     aspect-ratio: auto;
+    width: 100%;
   }
   .tile.full { column-span: unset; margin: 0 0 var(--gutter); }
   .tile img, .tile.full img {
@@ -517,13 +518,55 @@ button { font-family: inherit; background: none; border: 0; color: inherit; curs
     max-height: none;
     height: auto;
     object-fit: cover;
-    transform: none !important;
+    --parallax: 0px;
+    transform: translateY(var(--parallax)) scale(1.08);
+    transition: filter 0.6s ease, opacity 0.9s ease;
+    will-change: transform;
   }
+  .tile.is-active img { transform: translateY(var(--parallax)) scale(1.08); }
+
+  /* Editorial rhythm variants */
+  .tile--full-bleed {
+    margin-left: calc(-1 * var(--gutter));
+    margin-right: calc(-1 * var(--gutter));
+    width: calc(100% + (var(--gutter) * 2));
+  }
+  .tile--indent-left {
+    width: 82%;
+    margin-right: auto;
+    margin-left: 0;
+  }
+  .tile--indent-right {
+    width: 82%;
+    margin-left: auto;
+    margin-right: 0;
+  }
+
+  /* 2-up pair */
+  .pair {
+    display: flex;
+    gap: var(--gutter);
+    margin: 0 0 var(--gutter);
+  }
+  .pair .tile {
+    flex: 1;
+    margin: 0;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+  }
+  .pair .tile img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .tile--intro, .tile--outro { display: none; }
 }
 
 @media (min-width: 721px) {
   .tile--intro, .tile--outro { display: none; }
+  /* On desktop, .pair is transparent — its children flow in the masonry columns */
+  .pair { display: contents; }
 
   .footer { padding: 20px 16px 24px; padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
   .footer-inner {
