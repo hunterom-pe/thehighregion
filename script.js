@@ -128,16 +128,6 @@ function loadGallery() {
     return;
   }
 
-  // Intro slide (mobile-only via CSS)
-  const intro = document.createElement("figure");
-  intro.className = "tile tile--intro";
-  intro.innerHTML = `
-    <p class="slide-mark">The High Region</p>
-    <hr />
-    <p class="slide-meta">Phoenix, AZ · ${photos.length} photographs</p>
-  `;
-  gallery.appendChild(intro);
-
   photos.forEach((photo, i) => {
     const src = typeof photo === "string" ? photo : photo.src;
     const caption = typeof photo === "string" ? "" : (photo.caption || "");
@@ -166,147 +156,11 @@ function loadGallery() {
     gallery.appendChild(tile);
   });
 
-  // Outro slide (mobile-only via CSS)
-  const outro = document.createElement("figure");
-  outro.className = "tile tile--outro";
-  outro.innerHTML = `
-    <p class="slide-mark">Thanks for looking.</p>
-    <hr />
-    <p class="slide-meta">Follow along</p>
-    <a class="slide-cta" href="https://www.instagram.com/thehighregion" target="_blank" rel="noopener">Instagram →</a>
-  `;
-  gallery.appendChild(outro);
-
   observeTiles();
   prepareLightbox(photos);
   bindParallax();
-  bindCarousel(photos);
-  buildGridOverlay(photos);
 }
 
-// ---------- Mobile carousel (progress bar, counter, grid button, hint) ----------
-function bindCarousel(photos) {
-  const gallery = document.getElementById("gallery");
-  const ui = document.getElementById("carousel-ui");
-  const iEl = document.getElementById("car-i");
-  const nEl = document.getElementById("car-n");
-  const progressEl = document.getElementById("car-progress");
-  const hintEl = document.getElementById("car-hint");
-  const gridBtn = document.getElementById("car-grid-btn");
-  if (!gallery || !ui) return;
-
-  const isMobile = () => matchMedia("(max-width: 720px)").matches;
-
-  nEl.textContent = String(photos.length).padStart(2, "0");
-
-  function setActive(tileEl) {
-    [...gallery.children].forEach((c) => c.classList.toggle("is-active", c === tileEl));
-    const pIdx = tileEl && tileEl.dataset.photoIndex !== undefined ? Number(tileEl.dataset.photoIndex) : null;
-    if (pIdx !== null && !Number.isNaN(pIdx)) {
-      iEl.textContent = String(pIdx + 1).padStart(2, "0");
-      const pct = photos.length > 1 ? (pIdx / (photos.length - 1)) * 100 : 100;
-      progressEl.style.width = pct + "%";
-    } else if (tileEl && tileEl.classList.contains("tile--intro")) {
-      iEl.textContent = "00";
-      progressEl.style.width = "0%";
-    } else if (tileEl && tileEl.classList.contains("tile--outro")) {
-      iEl.textContent = String(photos.length).padStart(2, "0");
-      progressEl.style.width = "100%";
-    }
-  }
-
-  // activate first real photo by default
-  const firstPhoto = gallery.querySelector(".tile:not(.tile--intro):not(.tile--outro)");
-  if (firstPhoto) setActive(firstPhoto);
-
-  const io = new IntersectionObserver(
-    (entries) => {
-      if (!isMobile()) return;
-      let best = null;
-      entries.forEach((e) => {
-        if (!best || e.intersectionRatio > best.intersectionRatio) best = e;
-      });
-      if (best && best.isIntersecting && best.intersectionRatio > 0.55) {
-        setActive(best.target);
-      }
-    },
-    { root: null, threshold: [0.55, 0.8, 1] }
-  );
-  [...gallery.children].forEach((tile) => io.observe(tile));
-
-  // Swipe hint: show on mobile, fade on first scroll
-  if (isMobile()) {
-    setTimeout(() => hintEl.classList.add("show"), 600);
-    const onFirstScroll = () => {
-      hintEl.classList.remove("show");
-      gallery.removeEventListener("scroll", onFirstScroll);
-    };
-    gallery.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
-    setTimeout(() => hintEl.classList.remove("show"), 5000);
-  }
-
-  // Grid button → open overlay
-  gridBtn.addEventListener("click", () => {
-    document.getElementById("grid-overlay").classList.add("open");
-    document.getElementById("grid-overlay").setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-  });
-
-  // Hero scroll arrow click → scroll to gallery
-  const heroScroll = document.querySelector(".hero-scroll");
-  if (heroScroll) {
-    heroScroll.style.cursor = "pointer";
-    heroScroll.addEventListener("click", () => {
-      gallery.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }
-}
-
-// ---------- Grid overlay (all-photos view) ----------
-function buildGridOverlay(photos) {
-  const overlay = document.getElementById("grid-overlay");
-  const inner = document.getElementById("grid-overlay-inner");
-  const close = document.getElementById("grid-close");
-  const gallery = document.getElementById("gallery");
-  if (!overlay || !inner) return;
-
-  photos.forEach((photo, idx) => {
-    const src = typeof photo === "string" ? photo : photo.src;
-    const b = document.createElement("button");
-    b.type = "button";
-    b.setAttribute("aria-label", `Photo ${idx + 1}`);
-    const img = document.createElement("img");
-    img.src = `images/${src}`;
-    img.alt = "";
-    img.loading = "lazy";
-    img.decoding = "async";
-    b.appendChild(img);
-    b.addEventListener("click", () => {
-      closeOverlay();
-      // scroll carousel to that photo
-      const target = gallery.querySelector(`.tile[data-photo-index="${idx}"]`);
-      if (target) {
-        requestAnimationFrame(() => {
-          target.scrollIntoView({ behavior: "smooth", block: "center" });
-        });
-      }
-    });
-    inner.appendChild(b);
-  });
-
-  function closeOverlay() {
-    overlay.classList.remove("open");
-    overlay.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-  }
-  close.addEventListener("click", closeOverlay);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) closeOverlay();
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && overlay.classList.contains("open")) closeOverlay();
-  });
-}
 
 // ---------- Scroll reveal ----------
 function observeTiles() {
